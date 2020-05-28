@@ -1,0 +1,95 @@
+###########################################
+# Syntax Coloring Map For MTEC_smartfarm
+###########################################
+
+###########################################
+# Datatypes (KEYWORD1)
+###########################################
+
+cSmartFarm	        KEYWORD1
+cWiFi			          KEYWORD1
+cAnalogSensor	      KEYWORD1
+cCurrent	          KEYWORD1
+cEC	                KEYWORD1
+cLCD	              KEYWORD1
+cLCDError	          KEYWORD1
+cLED	              KEYWORD1
+cLight	            KEYWORD1
+cLog	              KEYWORD1
+cPH	                KEYWORD1
+
+
+###########################################
+# Methods and Functions (KEYWORD2)
+###########################################
+
+init			          KEYWORD2
+update			        KEYWORD2
+add_update_function	KEYWORD2
+delay			          KEYWORD2
+read_temperature		KEYWORD2
+read_humidity		    KEYWORD2
+read        		    KEYWORD2
+send_line_message   KEYWORD2
+get_time		        KEYWORD2
+set_log_level		    KEYWORD2
+micro_update		    KEYWORD2
+clear			          KEYWORD2
+enable		          KEYWORD2
+enable_upload       KEYWORD2
+is_connected        KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+lcd			            KEYWORD2
+lcd_err			        KEYWORD2
+Log                 KEYWORD2
+
+###########################################
+# Constants (LITERAL1)
+###########################################
+
+INTERVAL_UPLOAD_DATA          	LITERAL1
+HOSTNAME                        LITERAL1
+LCD_ADDR         	              LITERAL1
+LCD_COLUMNS         	          LITERAL1
+LCD_ROWS         	              LITERAL1
+LCDERROR_ADDR         	        LITERAL1
+LCDERROR_COLUMNS         	      LITERAL1
+LCDERROR_ROWS         	        LITERAL1
+LED_NUMPIXELS         	        LITERAL1
+STATION_API_KEY_LEN         	  LITERAL1
+PIN_OUTPUT_LED         	        LITERAL1
+PIN_OUTPUT_RELAYS         	    LITERAL1
+PIN_OUTPUT_FAN_TOP         	    LITERAL1
+PIN_OUTPUT_FAN_MIDDLE         	LITERAL1
+PIN_OUTPUT_FAN_BOTTOM         	LITERAL1
+PIN_OUTPUT_PUMP_WATER         	LITERAL1
+PIN_OUTPUT_PUMP_EVAPORATOR      LITERAL1
+PIN_TEMP_HUMID         	        LITERAL1
+PIN_BATTERY         	          LITERAL1
+PIN_PH         	                LITERAL1
+PIN_EC         	                LITERAL1
+PIN_CURRENT         	          LITERAL1
+PIN_WIFI_SS         	          LITERAL1
+PIN_WIFI_ACK         	          LITERAL1
+PIN_WIFI_RESET         	        LITERAL1
+PIN_INPUT_RELAYS         	      LITERAL1
+PIN_INPUT_FAN_TOP         	    LITERAL1
+PIN_INPUT_FAN_MIDDLE         	  LITERAL1
+PIN_INPUT_FAN_BOTTOM         	  LITERAL1
+PIN_INPUT_PUMP_EVAPORATOR       LITERAL1
+PIN_INPUT_PUMP_WATER         	  LITERAL1
+PIN_INPUT_LEVEL_WATER         	LITERAL1
+PIN_INPUT_LEVEL_EVAPORATOR      LITERAL1
+WL_NO_SHIELD         	          LITERAL1
+WL_IDLE_STATUS          	      LITERAL1
+WL_NO_SSID_AVAIL         	      LITERAL1
+WL_SCAN_COMPLETED         	    LITERAL1
+WL_CONNECTED         	          LITERAL1
+WL_CONNECT_FAILED          	    LITERAL1
+WL_CONNECTION_LOST         	    LITERAL1
+WL_DISCONNECTED         	      LITERAL1
+
