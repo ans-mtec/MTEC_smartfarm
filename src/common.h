@@ -13,7 +13,7 @@ struct tUploadData{
     , ec               // Millisiemens
     , current;         // Ampere
 
-  float input_light;
+  float input_light[3]; // LED (RGB)
 
   // these data values can be only 0 / 1 ( means OFF / ON )
   uint8_t input_fan_top

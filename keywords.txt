@@ -17,7 +17,7 @@ cLED	              KEYWORD1
 cLight	            KEYWORD1
 cLog	              KEYWORD1
 cPH	                KEYWORD1
-
+tm                  KEYWORD1
 
 ###########################################
 # Methods and Functions (KEYWORD2)
@@ -38,6 +38,8 @@ clear			          KEYWORD2
 enable		          KEYWORD2
 enable_upload       KEYWORD2
 is_connected        KEYWORD2
+set_pixel_num       KEYWORD2
+set_color           KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
@@ -92,4 +94,7 @@ WL_CONNECTED         	          LITERAL1
 WL_CONNECT_FAILED          	    LITERAL1
 WL_CONNECTION_LOST         	    LITERAL1
 WL_DISCONNECTED         	      LITERAL1
-
+LOG_ESSENTIAL         	        LITERAL1
+LOG_ERROR         	            LITERAL1
+LOG_WARN         	              LITERAL1
+LOG_INFO         	              LITERAL1

@@ -206,7 +206,8 @@ void cSmartFarm::upload_data(){
   upload_data.b_input_pump_evap = true;
 
   const uint8_t *rgb = _led.get_color();
-  upload_data.input_light = (rgb[0]+rgb[1]+rgb[2])/(3.0*255.0);
+  for(int i=0;i<3;i++)
+    upload_data.input_light[i] = rgb[i]/255.0;
   upload_data.b_input_light = true;
 /*
   upload_data.input_level_water = digitalRead( PIN_INPUT_LEVEL_WATER );

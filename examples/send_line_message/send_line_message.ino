@@ -1,5 +1,5 @@
 /*
-  ตัวอย่างโปรแกรมส่งข้อความไปยัง LINE
+  A sample program to send a LINE message
 */
 
 #include <MTEC_smartfarm.h>
@@ -7,49 +7,50 @@
 cSmartFarm smartfarm;
 
 void setup(){
-  // เปิดใช้ Serial เพื่อแสดงข้อความจาก smartfarm library
+  // Use Serial for showing message from smartfarm library
   Serial.begin(9600);
 
   /*
-    เปลี่ยนระดับการแสดงข้อความเป็น "LOG_WARN".
-    หากต้องการให้แสดงข้อมูลอย่างละเอียดสามารถเปลี่ยนเป็น "LOG_INFO" ได้
+    Set log level to LOG_WARN.
+    You can change to LOG_INFO for more information.
   */
   smartfarm.set_log_level( LOG_WARN );
 
-  // ปิดการทำงานของเซนเซอร์เพราะไม่ได้ใช้ในโปรแกรมนี้
+  // Disable sensors since they are not used in this sample program
   smartfarm._temp_humid.enable(false);
   smartfarm._light.enable(false);
   smartfarm._ec.enable(false);
   smartfarm._ph.enable(false);
 
-  // เนื่องจากเป็นโปรแกรมสำหรับทดสอบจึงปิดการ upload ข้อมูลเซนเซอร์ขึ้นเซิฟเวอร์
+  // Disable uploading data to server
   smartfarm.enable_upload( false );
   
   /*
-    เริ่มการทำงาน smartfarm library หากมีปัญหาจะคืนค่าเป็น false
-    ใส่ station API key แทนข้อความ "xxxxxxxxxxxx"
+    Initialize smartfarm library. Return false if failed.
+    Replace "xxxxxxxxxxxx" with your station API key.
   */
   if( !smartfarm.init("xxxxxxxxxxxx") )
     while(1);
 
   /*
-    เปลี่ยนระดับการแสดงข้อความของ Wi-Fi module เป็น "LOG_WARN".
-    หากต้องการให้แสดงข้อมูลอย่างละเอียดสามารถเปลี่ยนเป็น "LOG_INFO" ได้
+    Set Wi-Fi module's log level to LOG_WARN.
+    You can change to LOG_INFO for more information.
   */
   smartfarm._wifi.set_log_level( LOG_WARN );
   
-  // รอจนกว่าจะต่อ Wi-Fi ได้
+  // Wait until Wi-Fi connected.
   Serial.println("Wait until Wi-Fi connected ...");
   while( !smartfarm._wifi.is_connected() ){
     /*
-     smartfarm.delay() ทำงานคล้ายกับ delay() คือหยุดการทำงานเป็นเวลา xx millisecond
-     ข้อแตกต่างคือ smartfarm.delay() จะทำการเก็บข้อมูลเซนเซอร์ต่างๆในระหว่างหยุดการทำงานนั้น
+      smartfarm.delay() does the same thing as delay(); 
+      stop running program for xx milliseconds.
+      The difference is sensor data are still being collected while stopped by smartfarm.delay().
     */
     smartfarm.delay(1000);
   }
 
-  // ส่งข้อความไปยัง LINE
-  // ใส่ Access token ของ LINE แทน "xxxxxxxxx"
+  // send a LINE message
+  // Replace "xxxxxxxxx" with your LINE's access token
   Serial.println("Sending message to LINE ...");
   if( smartfarm.send_line_message( "xxxxxxxxx", "Message from Smartfarm" ) ){
     Serial.println("LINE message has been sent.");

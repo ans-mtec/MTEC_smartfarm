@@ -179,8 +179,12 @@ bool cWiFi::upload_data(const char *host, const char *api_key, const tUploadData
     send_command(upload_data.input_level_evap, true);
   }
   if( upload_data.b_input_light ){
-    send_command(",\"input_light\":", true);
-    send_command(upload_data.input_light, true);
+    send_command(",\"input_light_r\":", true);
+    send_command(upload_data.input_light[0], true);
+    send_command(",\"input_light_g\":", true);
+    send_command(upload_data.input_light[1], true);
+    send_command(",\"input_light_b\":", true);
+    send_command(upload_data.input_light[2], true);
   }
   send_command("};\r\n", true);
   Log.infoln("I:Waiting response from server ...");
