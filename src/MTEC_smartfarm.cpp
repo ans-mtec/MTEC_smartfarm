@@ -109,6 +109,7 @@ void cSmartFarm::update(){
     return;
   _b_in_update = true;
 
+  _wifi.update();
   micro_update();
 
   // upload data to server every [INTERVAL_UPLOAD_DATA] milliseconds

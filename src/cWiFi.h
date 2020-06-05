@@ -70,6 +70,13 @@ public:
 
   // Change SSID, user name or password
   bool change_network_profile(const char *ssid, const char *username, const char *password);
+  
+  // Reconnect Wi-Fi
+  bool reconnect();
+  
+  // Restart Wi-Fi module
+  bool restart();
+  
 
   // enable / disable
   inline bool enable(bool b_enable){
@@ -84,7 +91,10 @@ public:
 
   /********  for internal use  ********/
 
-  // read response from Wi-Fi module
+  // Read response from Wi-Fi module. This function will be called in update function.
+  void read_response();
+
+  // read response from Wi-Fi module and update real time from Wi-Fi module
   void update();
 
   // set an update function you want it to be called while Wi-Fi functions proceeded

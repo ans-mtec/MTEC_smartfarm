@@ -486,8 +486,7 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
 
   char str[64];
 
-  while(Serial2.available())
-    Serial2.read();
+  read_response();
 
   // SSID
   sprintf( str, "SSID:%s\r\n", ssid );
@@ -497,8 +496,7 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
     return false;
   }
   delay(100);
-  while(Serial2.available())
-    Serial2.read();
+  read_response();
 
   // username
   sprintf( str, "USER:%s\r\n", username );
@@ -508,8 +506,7 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
     return false;
   }
   delay(100);
-  while(Serial2.available())
-    Serial2.read();
+  read_response();
 
   // password
   sprintf( str, "PASS:%s\r\n", password );
@@ -518,16 +515,44 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
     Log.error("Cannot change password\r\n");
     return false;
   }
+  
   delay(100);
-  while(Serial2.available())
-    Serial2.read();
+  read_response();
 
-  return true;
+  // reconnect
+  return reconnect();
+
 }
 
 
+bool cWiFi::reconnect(){
+  if( !_b_enable || !_b_init )
+    return false;
+  send_command("RECONNECT\r\n");
+  if( !wait_response( "OK:RECONNECT", NULL, 1000 ) ){
+    Log.error("Cannot reconnect Wi-Fi\r\n");
+    return false;
+  }
+  delay(100);
+  read_response();
+  return true;
+}
+
+bool cWiFi::restart(){
+  if( !_b_enable || !_b_init )
+    return false;
+  send_command("RESTART\r\n");
+  if( !wait_response( "OK:RESTART", NULL, 1000 ) ){
+    Log.error("Cannot restart Wi-Fi module\r\n");
+    return false;
+  }
+  delay(100);
+  read_response();
+  return true;
+}
+
 // read response from WiFi module
-void cWiFi::update(){
+void cWiFi::read_response(){
   if( !_b_enable || !_b_init )
     return;
   while( Serial2.available() ){
@@ -552,6 +577,14 @@ void cWiFi::update(){
       }
     }
   }
+}
+
+// read response from WiFi module
+void cWiFi::update(){
+  if( !_b_enable || !_b_init )
+    return;
+  
+  read_response();
 
   // update time from Wi-Fi module every [INTERVAL_UPDATE_TIME] milliseconds
   /*
