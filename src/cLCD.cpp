@@ -40,6 +40,7 @@ void cLCDError::print(const char *msg){
   if( !_b_enable || !_b_init )
     return;
 
+  clear();
   int len = strlen(msg);
   if( len <= LCDERROR_COLUMNS ){
     _lcd.home();
@@ -59,18 +60,19 @@ void cLCDError::print(const char *msg){
 
   if( _p_wifi ){
     struct tm timeinfo;
-    // get time from Wi-Fi module
-    if( _p_wifi->get_time(&timeinfo) ){
+    // get date & time from Wi-Fi module
+    if( _p_wifi->get_datetime(&timeinfo) ){
       // print timestamp
       char str[16];
-      sprintf( str, " %02d%02d%02d-%02d%02d"
-        , timeinfo.tm_year
-        , timeinfo.tm_mon
+      sprintf( str, " %02d/%02d/%02d %02d:%02d"
+        , timeinfo.tm_year-100
+        , timeinfo.tm_mon+1
         , timeinfo.tm_mday
         , timeinfo.tm_hour
         , timeinfo.tm_min
       );
       _lcd.setCursor( LCDERROR_COLUMNS - strlen(str), LCDERROR_ROWS - 1 );
+      _lcd.print( str );
     }
   }
 }
@@ -78,6 +80,7 @@ void cLCDError::print(const char *msg){
 void cLCDError::clear_error(){
   if( !_b_enable || !_b_init )
     return;
+  clear();
   _lcd.home();
   _lcd.print("NO ERROR");
 }

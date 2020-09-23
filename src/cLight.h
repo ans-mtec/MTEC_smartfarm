@@ -63,6 +63,9 @@ public:
   // check if enabled
   inline bool is_enabled(){ return _b_enable; }
 
+  // check if the sensor is enabled & initialized
+  inline bool is_active(){ return _b_enable && _b_init; }
+
 
 private:
   Adafruit_TSL2591 _tsl;      // Light sensor instance

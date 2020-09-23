@@ -15,49 +15,68 @@ cWiFi::cWiFi():_n_serial_buf(0),_fn_update(NULL),_b_enable(true),_b_init(false){
   _unixtime = 0;
   _t_unixtime = 0;
   _t_last_unixtime = -INTERVAL_UPDATE_TIME;
+
+  pinMode(PIN_WIFI_RESET, OUTPUT);
+  digitalWrite(PIN_WIFI_RESET, HIGH);
 }
 
 bool cWiFi::start(){
+
   if( !_b_enable || _b_init )
     return true;
+  Log.info("I:cWiFi::start()\n");
   Serial2.begin(9600);    // use Serial2 to communicate with Wi-Fi module
   while(Serial2.available())
     Serial2.read();
 
   // send PING command to a Wi-Fi module to check if the Wi-Fi module is active
-  for(int i=0;i<3;i++){
-    send_command("PING\r\n");
-    if( wait_response( "OK:PING", NULL, 2000 ) ){
-      _b_init = true;
-      delay(100);
-      while(Serial2.available())
-        Serial2.read();
-      set_log_level( LOG_WARN );
-      return true;
+  for(int k=0;k<2;k++){
+    // reset Wi-Fi module
+    reset();
+    for(int i=0;i<3;i++){
+      send_command("PING\r\n");
+      if( wait_response( "OK:PING", NULL, 1000 ) ){
+        _b_init = true;
+        delay(100);
+        read_response();
+        set_log_level( LOG_WARN );
+        delay(200);
+        read_response();
+        send_command("RECONNECT\r\n");
+        return true;
+      }
     }
   }
+  // No response from Wi-Fi module.
   lcd_err.print("WiFi NO RESPONSE");
   return false;
 }
 
+
+
 /*
- Wait untile got specified responses from Wi-Fi module.
+ Wait until got specified responses from the Wi-Fi module.
  Return true if got "ok_msg".
  Return false if got "fail_msg" or timeout.
- If "all_response" is not NULL, all response messages will be kept in "all_response"
+ If "all_response" variable is not NULL, all response messages will be stored in "all_response"
  "max_response_len" is the maximum length of "all_response"
 */
 bool cWiFi::wait_response(const char *ok_msg, const char *fail_msg, const uint32_t timeout, char *all_response, const uint16_t max_response_len){
   if( !_b_enable )
     return false;
 
+  Log.info("I:wait_response\n");
   const uint16_t ok_len = strlen(ok_msg), fail_len = fail_msg ? strlen(fail_msg) : 0;
   const uint32_t t = millis();
   uint16_t response_len = 0;
 
+  _n_serial_buf = 0;
   while( (uint32_t)(millis()-t) < timeout ){
     while(Serial2.available()){
       char c = Serial2.read();
+      if( (uint32_t)(millis()-t) >= timeout ){
+        break;
+      }
       // save response messages in all_response
       if( all_response && response_len < max_response_len-1 ){
         all_response[response_len++] = c;
@@ -77,7 +96,7 @@ bool cWiFi::wait_response(const char *ok_msg, const char *fail_msg, const uint32
           }
           // Return false if got "fail_msg".
           else if( fail_msg && strncmp(_serial_buf, fail_msg, fail_len)==0 ){
-            Log.warn("W:Got error message from WiFi module:");
+            Log.warn("W:Got error from WiFi module:");
             Log.warnln(_serial_buf);
             if( all_response )
               all_response[response_len] = 0;
@@ -97,8 +116,9 @@ bool cWiFi::wait_response(const char *ok_msg, const char *fail_msg, const uint32
         }
       }
     }
-    if( _fn_update )
+    if( _fn_update ){
       _fn_update();
+    }
   }
   Log.error("W:Waiting response from WiFi timeout:");
   Log.errorln(ok_msg);
@@ -106,6 +126,8 @@ bool cWiFi::wait_response(const char *ok_msg, const char *fail_msg, const uint32
     all_response[response_len] = 0;
   return false;
 }
+
+
 
 
 // upload data to server
@@ -162,21 +184,21 @@ bool cWiFi::upload_data(const char *host, const char *api_key, const tUploadData
     send_command(",\"input_fan_bot\":", true);
     send_command(upload_data.input_fan_bot, true);
   }
-  if( upload_data.b_input_pump_water ){
-    send_command(",\"input_pump_water\":", true);
-    send_command(upload_data.input_pump_water, true);
+  if( upload_data.b_input_pump_plant ){
+    send_command(",\"input_pump_plant\":", true);
+    send_command(upload_data.input_pump_plant, true);
   }
   if( upload_data.b_input_pump_evap ){
     send_command(",\"input_pump_evap\":", true);
     send_command(upload_data.input_pump_evap, true);
   }
-  if( upload_data.b_input_level_water ){
-    send_command(",\"input_level_water\":", true);
-    send_command(upload_data.input_level_water, true);
+  if( upload_data.b_status_pump_plant ){
+    send_command(",\"status_pump_plant\":", true);
+    send_command(upload_data.status_pump_plant, true);
   }
-  if( upload_data.b_input_level_evap ){
-    send_command(",\"input_level_evap\":", true);
-    send_command(upload_data.input_level_evap, true);
+  if( upload_data.b_status_pump_evap ){
+    send_command(",\"status_pump_evap\":", true);
+    send_command(upload_data.status_pump_evap, true);
   }
   if( upload_data.b_input_light ){
     send_command(",\"input_light_r\":", true);
@@ -275,7 +297,7 @@ bool cWiFi::is_connected(){
 }
 
 // get time from cache
-bool cWiFi::get_time(struct tm *p_timeinfo){
+bool cWiFi::get_datetime(struct tm *p_timeinfo){
   if( !_b_enable || !_b_init ){
     return false;
   }
@@ -290,7 +312,7 @@ bool cWiFi::get_time(struct tm *p_timeinfo){
 
 
 // get time from Wi-Fi module. return false if failed
-bool cWiFi::get_time_from_wifi(struct tm *p_timeinfo){
+bool cWiFi::get_datetime_from_wifi(struct tm *p_timeinfo){
   if( !_b_enable || !_b_init )
     return false;
 
@@ -380,7 +402,7 @@ bool cWiFi::get_time_from_wifi(struct tm *p_timeinfo){
   }
   while( uint32_t(millis()-t) < 5000 );
 
-  Log.infoln("I:get_time() timeout");
+  Log.infoln("I:get_datetime() timeout");
   return false;
 }
 
@@ -439,7 +461,7 @@ bool cWiFi::get_unixtime_from_wifi(time_t *p_unixtime){
   }
   while( uint32_t(millis()-t) < 5000 );
 
-  Log.infoln("I:get_time() timeout");
+  Log.infoln("I:get_datetime() timeout");
   return false;
 }
 
@@ -475,9 +497,11 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
     Log.error("Too long SSID\r\n");
     return false;
   }
-  if( strlen(username)>=32 ){
-    Log.error("Too long username\r\n");
-    return false;
+  if( username ){
+    if( strlen(username)>=32 ){
+      Log.error("Too long username\r\n");
+      return false;
+    }
   }
   if( strlen(password)>=32 ){
     Log.error("Too long password\r\n");
@@ -499,7 +523,10 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
   read_response();
 
   // username
-  sprintf( str, "USER:%s\r\n", username );
+  if( username )
+    sprintf( str, "USER:%s\r\n", username );
+  else
+    strcpy( str, "USER:\r\n" );
   send_command(str);
   if( !wait_response( "OK:USER", NULL, 1000 ) ){
     Log.error("Cannot change username\r\n");
@@ -515,7 +542,7 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
     Log.error("Cannot change password\r\n");
     return false;
   }
-  
+
   delay(100);
   read_response();
 
@@ -551,6 +578,15 @@ bool cWiFi::restart(){
   return true;
 }
 
+// reset Wi-Fi module
+void cWiFi::reset(){
+  Log.info("I:Resetting WiFi module ...\r\n");
+  digitalWrite(PIN_WIFI_RESET, LOW);
+  delay(100);
+  digitalWrite(PIN_WIFI_RESET, HIGH);
+  delay(1000);
+}
+
 // read response from WiFi module
 void cWiFi::read_response(){
   if( !_b_enable || !_b_init )
@@ -560,8 +596,14 @@ void cWiFi::read_response(){
     if( c=='\r' || c=='\n' ){
       if( _n_serial_buf>0 ){
         _serial_buf[_n_serial_buf] = 0;
-        Log.essential("WiFi:");
-        Log.essentialln(_serial_buf);
+        if( _serial_buf[0]=='R' && _serial_buf[1]==':' ){
+          Log.info("I:WiFi:");
+          Log.infoln(_serial_buf);
+        }
+        else{
+          Log.essential("WiFi:");
+          Log.essentialln(_serial_buf);
+        }
         _n_serial_buf = 0;
       }
     }
@@ -581,15 +623,28 @@ void cWiFi::read_response(){
 
 // read response from WiFi module
 void cWiFi::update(){
-  if( !_b_enable || !_b_init )
+  if( !_b_enable )
     return;
+  if( !_b_init ){
+    static uint32_t t_last_init = millis();
+    if( millis()-t_last_init>= 1000 ){
+      if( !start() ){
+        t_last_init = millis();
+        return;
+      }
+      t_last_init = millis();
+    }
+    else
+      return;
+  }
   
+
   read_response();
 
   // update time from Wi-Fi module every [INTERVAL_UPDATE_TIME] milliseconds
   /*
   if( uint32_t(millis()-_t_last_timeinfo) >= INTERVAL_UPDATE_TIME ){
-    this->get_time_from_wifi(&_timeinfo);
+    this->get_datetime_from_wifi(&_timeinfo);
   }*/
   if( uint32_t(millis()-_t_last_unixtime) >= INTERVAL_UPDATE_TIME ){
     this->get_unixtime_from_wifi(&_unixtime);

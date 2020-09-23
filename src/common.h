@@ -19,10 +19,10 @@ struct tUploadData{
   uint8_t input_fan_top
     , input_fan_mid
     , input_fan_bot
-    , input_pump_water
+    , input_pump_plant
     , input_pump_evap
-    , input_level_water
-    , input_level_evap;
+    , status_pump_plant
+    , status_pump_evap;
 
   // be true if the data exist
   bool b_humidity
@@ -35,10 +35,10 @@ struct tUploadData{
     , b_input_fan_top
     , b_input_fan_mid
     , b_input_fan_bot
-    , b_input_pump_water
+    , b_input_pump_plant
     , b_input_pump_evap
-    , b_input_level_water
-    , b_input_level_evap
+    , b_status_pump_plant
+    , b_status_pump_evap
     , b_input_light;
 
   tUploadData(){ memset( this, 0, sizeof(tUploadData) ); }

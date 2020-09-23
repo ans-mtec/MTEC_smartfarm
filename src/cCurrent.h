@@ -8,8 +8,8 @@
 
 #include "cAnalogSensor.h"
 
-#define CURRENT_READ_INTERVAL_MS    5  // interval to read current [ms]
-#define CURRENT_BUFFER_SIZE         50 // number of current data used for calculating average value
+#define CURRENT_READ_INTERVAL_MS    5  // an interval to read current [ms]
+#define CURRENT_BUFFER_SIZE         50 // a number of current data used for calculating average value
 
 class cCurrent : public cAnalogSensor{
 public:
@@ -27,9 +27,10 @@ public:
     float volt = this->get_average_volt();
 
     // convert from voltage to ampere
-    float amp = (volt - 2.5)/0.100; // ACS712-20A (-20A~+20A)
-//      , amp = (volt - 2.5)/0.090; // ACS711EX (-15~+15A )
-//      , amp = (volt - 2.5)/0.066; // ACS714 (-30~+30A )
+    float amp = (volt - 2.5)/0.136; // Pololu ACS711EX (-15~+15A )
+//    float amp = (volt - 2.5)/0.100; // ACS712-20A (-20A~+20A)
+//    float amp = (volt - 2.5)/0.090; // ACS711EX (-15~+15A )
+//    float amp = (volt - 2.5)/0.066; // ACS714 (-30~+30A )
     return amp >= 0.0 ? amp : 0.0;
   }
 };

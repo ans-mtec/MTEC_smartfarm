@@ -8,8 +8,8 @@
 
 #include "cAnalogSensor.h"
 
-#define EC_READ_INTERVAL_MS   1    // interval to read EC data [ms]
-#define EC_BUFFER_NUM         20   // number of EC data used to calculate average value
+#define EC_READ_INTERVAL_MS   1    // an interval to read EC data [ms]
+#define EC_BUFFER_NUM         20   // a number of EC data used to calculate average value
 
 
 class cEC : public cAnalogSensor{
@@ -22,9 +22,11 @@ public:
   // read electricity conductivity [millisiemens]
   float read(){
     if( !_b_enable )
-      return 0;
+      return -1.0;
 
     float volt = get_average_volt();
+    if( volt<=0.0 )
+      return -1.0;
 
     // convert volt to current (4-20 mA)
     float mA = volt * (16.0 / 5.0) + 4;

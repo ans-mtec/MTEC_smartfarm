@@ -16,7 +16,7 @@
 class cWiFi;
 
 // A LCD for user.
-// You can use this LCD to show any message
+// You can use this LCD to show any messages
 class cLCD{
 public:
   cLCD(uint8_t addr=LCD_ADDR      // LCD address (I2C)
@@ -70,8 +70,8 @@ protected:
 };
 
 
-// A LCD for showing error message from system.
-// User should not use this LCD.
+// A LCD for showing error messages from system.
+// Users should not use this LCD.
 class cLCDError : public cLCD{
 public:
   cLCDError():cLCD(LCDERROR_ADDR, LCDERROR_COLUMNS, LCDERROR_ROWS),_p_wifi(NULL){}
@@ -86,7 +86,7 @@ public:
   inline void set_wifi(cWiFi *p_wifi){ _p_wifi = p_wifi; }
 
 private:
-  cWiFi *_p_wifi;
+  cWiFi *_p_wifi;   // Use Wi-Fi instance to acquire date & time from internet
 };
 
 extern cLCD lcd;

@@ -1,5 +1,5 @@
 /*
-  A sample program to read sensors data and show on LCD
+  A sample program to read sensors data and show on a LCD
 */
 
 #include <MTEC_smartfarm.h>
@@ -15,7 +15,7 @@ char wifi_status[32] = "";        // A variable to keep Wi-Fi status
 void get_wifi_status();
 
 void setup(){
-  // Use Serial for showing message from smartfarm library
+  // Use Serial for showing messages from Smartfarm library
   Serial.begin(9600);
 
   /*
@@ -24,8 +24,15 @@ void setup(){
   */
   smartfarm.set_log_level( LOG_WARN );
 
-  // Disable uploading data to server
+  // Disable uploading data to server since this is a sample program
   smartfarm.enable_upload( false );
+
+  /*
+   Set parameters to convert voltage from pH meter to pH value.
+   In this case : pH value = 1.94247*voltage + 3.39571
+   These parameters drift over time so they should be calibrated every month.
+  */
+  smartfarm._ph.set_param_volt2pH( 1.94247, 3.39571 );
 
   /*
     Initialize smartfarm library. Return false if failed.
@@ -96,19 +103,19 @@ void loop(){
 
 // A funtion to check Wi-Fi status
 void get_wifi_status(){
-  // update status every 5 seconds
+  // update Wi-Fi status every 5 seconds
   if( uint32_t(millis()-time_wifi_status) < 5000 )
     return;
   time_wifi_status = millis();
 
   // get Wi-Fi status. It will return a status code.
-  uint8_t wifi_status_id;
-  if( !smartfarm._wifi.get_status(&wifi_status_id) ){
-    wifi_status_id = 99;
+  uint8_t wifi_status_code;
+  if( !smartfarm._wifi.get_status(&wifi_status_code) ){
+    wifi_status_code = 99;
   }
   // Convert status code to a string
   // for more details : https://www.arduino.cc/en/Reference/WiFiStatus
-  switch(wifi_status_id){
+  switch(wifi_status_code){
     case WL_NO_SHIELD:
       strcpy( wifi_status, "NO_SHIELD" );
       break;
@@ -137,6 +144,6 @@ void get_wifi_status(){
       strcpy( wifi_status, "CANNOT GET STATUS" );
       break;
     default:
-      sprintf( wifi_status, "UNKNOWN %d", wifi_status_id );
+      sprintf( wifi_status, "UNKNOWN %d", wifi_status_code );
   }
 }

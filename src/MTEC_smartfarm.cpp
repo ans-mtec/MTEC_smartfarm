@@ -9,20 +9,13 @@
 #include "./MTEC_smartfarm.h"
 
 #include "./cWiFi.h"
-/*
-#ifdef __USE_WIFI_SPI__
-  #include "cWiFi_SPI.h"
-#else
-  #include "cWiFi_Serial.h"
-#endif
-*/
 
 cLog Log(&Serial);
 cLCD lcd;
 cLCDError lcd_err;
 cSmartFarm *p_smartfarm = NULL;
 
-// This function will be called as frequently as possible while WiFi proceeds
+// This function will be called as frequently as possible while Wi-Fi funtions proceed
 void fn_update_wifi(){
   if( p_smartfarm )
     p_smartfarm->micro_update();
@@ -38,49 +31,44 @@ cSmartFarm::cSmartFarm():
   _led(),
   _lcd(lcd),
   _lcd_err(lcd_err),
+  _log_buffer(LOG_WARN),
   _fn_user_update(NULL),
-  _t_last_upload(0),
+  _t_last_upload_data(0),
+  _t_last_upload_log(0),
   _station_api_key{0},
   _b_in_update(false),
   _b_in_microupdate(false),
   _b_enable_upload(true)
 {
   Log.set_level(LOG_WARN);
-
-/*
-#ifdef __USE_WIFI_SPI__
-  _p_wifi = new cWiFi_SPI( PIN_WIFI_SS, PIN_WIFI_ACK, PIN_WIFI_RESET );
-#else
-  _p_wifi = new cWiFi_Serial();
-#endif
-*/
   p_smartfarm = this;
 }
 
 // Call this function first in your setup() function
 bool cSmartFarm::init(const char *station_api_key){
+  Log.set_buffer( &_log_buffer );
 
   while(Serial.available())
     Serial.read();
 
-  pinMode( PIN_OUTPUT_FAN_TOP, OUTPUT );
-  pinMode( PIN_OUTPUT_FAN_MIDDLE, OUTPUT );
-  pinMode( PIN_OUTPUT_FAN_BOTTOM, OUTPUT );
+  for(int i=0;i<6;i++)
+    pinMode( PIN_OUTPUT_RELAYS[i], OUTPUT );
 
   pinMode( PIN_INPUT_FAN_TOP, INPUT );
   pinMode( PIN_INPUT_FAN_MIDDLE, INPUT );
   pinMode( PIN_INPUT_FAN_BOTTOM, INPUT );
 
-  pinMode( PIN_OUTPUT_PUMP_EVAPORATOR, OUTPUT );
-  pinMode( PIN_OUTPUT_PUMP_WATER, OUTPUT );
-
-  pinMode( PIN_INPUT_PUMP_WATER, INPUT );
+  pinMode( PIN_INPUT_PUMP_PLANT, INPUT );
   pinMode( PIN_INPUT_PUMP_EVAPORATOR, INPUT );
-  pinMode( PIN_INPUT_LEVEL_WATER, INPUT );
-  pinMode( PIN_INPUT_LEVEL_EVAPORATOR, INPUT );
+
+  pinMode( PIN_STATUS_PUMP_PLANT, INPUT );
+  pinMode( PIN_STATUS_PUMP_EVAPORATOR, INPUT );
 
   lcd.start();
   lcd_err.start();
+  lcd_err.set_wifi( &_wifi );
+  lcd_err.clear_error();
+
   _temp_humid.start();
   if( !_light.start() )
     return false;
@@ -91,13 +79,14 @@ bool cSmartFarm::init(const char *station_api_key){
   strcpy( _station_api_key, station_api_key );
 
   _wifi.set_update_function( fn_update_wifi );
-  if( !_wifi.start() )
-    return false;
+  _wifi.start();
 
-  _t_last_upload = millis();
-  lcd_err.clear_error();
+  _t_last_upload_log = _t_last_upload_data = millis();
+  _t_last_upload_data-= INTERVAL_UPLOAD_DATA - 30000;
+  _t_last_upload_log-= INTERVAL_UPLOAD_LOG;
 
-  digitalWrite( PIN_OUTPUT_PUMP_WATER, HIGH );
+  digitalWrite( PIN_OUTPUT_PUMP_PLANT, HIGH );
+  digitalWrite( PIN_OUTPUT_CAMERA, HIGH );
   return true;
 }
 
@@ -110,12 +99,36 @@ void cSmartFarm::update(){
   _b_in_update = true;
 
   _wifi.update();
+  _temp_humid.update();
+  _led.update();
   micro_update();
 
   // upload data to server every [INTERVAL_UPLOAD_DATA] milliseconds
-  if( (uint32_t)(millis()-_t_last_upload) >= INTERVAL_UPLOAD_DATA ){
-    _t_last_upload = millis();
+  if( (uint32_t)(millis()-_t_last_upload_data) >= INTERVAL_UPLOAD_DATA ){
+    _t_last_upload_data = millis();
     upload_data();
+  }
+
+  // upload log messages to server
+  if( (uint32_t)(millis()-_t_last_upload_log) >= INTERVAL_UPLOAD_LOG ){
+    upload_log();
+    _t_last_upload_log = millis();
+  }
+
+  // control camera
+  {
+    static uint32_t t_control_camera = 0;
+    if( millis() - t_control_camera >= 300000 ){
+      struct tm timeinfo;
+      if( get_datetime(&timeinfo) ){
+        // turn on camera between 8:00 ~ 16:00
+        if( timeinfo.tm_hour < 16 && timeinfo.tm_hour>=8 )
+          digitalWrite( PIN_OUTPUT_CAMERA, HIGH );
+        else
+          digitalWrite( PIN_OUTPUT_CAMERA, LOW );
+      }
+      t_control_camera = millis();
+    }
   }
   _b_in_update = false;
 }
@@ -145,17 +158,18 @@ void cSmartFarm::micro_update(){
   // prevent multiple call
   if( _b_in_microupdate )
     return;
+
   _b_in_microupdate = true;
 
   // Update sensors' data
   _ec.update();
   _ph.update();
   _current.update();
-  _temp_humid.update();
 
   // call user's update function
-  if( _fn_user_update )
+  if( _fn_user_update ){
     _fn_user_update();
+  }
 
   _b_in_microupdate = false;
 }
@@ -164,7 +178,7 @@ void cSmartFarm::micro_update(){
 
 // Upload data to server
 void cSmartFarm::upload_data(){
-  // do nothing if station api key does not exist
+  // do nothing if station API key does not exist
   if( !_b_enable_upload || !_station_api_key[0] )
     return;
 
@@ -176,17 +190,17 @@ void cSmartFarm::upload_data(){
   upload_data.temp = _temp_humid.read_temperature();
   upload_data.b_temp = upload_data.temp!=0;
 
-//  upload_data.battery = analogRead( PIN_BATTERY ) * (5.0 / 1023.0);
-//  upload_data.b_battery = true;
+  upload_data.battery = analogRead( PIN_VIN ) * (5.0 / 1023.0) * (12.0 / 4.8);
+  upload_data.b_battery = true;
 
   upload_data.light = _light.read();
   upload_data.b_light = upload_data.light>=0.0;
 
   upload_data.ph = _ph.read();
-  upload_data.b_ph = _ph.is_enabled();
+  upload_data.b_ph = upload_data.ph >= 0.0;
 
   upload_data.ec = _ec.read();
-  upload_data.b_ec = _ec.is_enabled();
+  upload_data.b_ec = upload_data.ec >= 0.0;
 
   upload_data.current = _current.read();
   upload_data.b_current = _current.is_enabled();
@@ -200,8 +214,8 @@ void cSmartFarm::upload_data(){
   upload_data.input_fan_bot = digitalRead( PIN_INPUT_FAN_BOTTOM );
   upload_data.b_input_fan_bot = true;
 
-  upload_data.input_pump_water = digitalRead( PIN_INPUT_PUMP_WATER );
-  upload_data.b_input_pump_water = true;
+  upload_data.input_pump_plant = digitalRead( PIN_INPUT_PUMP_PLANT );
+  upload_data.b_input_pump_plant = true;
 
   upload_data.input_pump_evap = digitalRead( PIN_INPUT_PUMP_EVAPORATOR );
   upload_data.b_input_pump_evap = true;
@@ -210,18 +224,60 @@ void cSmartFarm::upload_data(){
   for(int i=0;i<3;i++)
     upload_data.input_light[i] = rgb[i]/255.0;
   upload_data.b_input_light = true;
-/*
-  upload_data.input_level_water = digitalRead( PIN_INPUT_LEVEL_WATER );
-  upload_data.b_input_level_water = true;
 
-  upload_data.input_level_evap = digitalRead( PIN_INPUT_LEVEL_EVAPORATOR );
-  upload_data.b_input_level_evap = true;
+  // have to inverse because of the opto isolator
+  upload_data.status_pump_plant = !digitalRead( PIN_STATUS_PUMP_PLANT );
+  upload_data.b_status_pump_plant = true;
 
-*/
+  upload_data.status_pump_evap = !digitalRead( PIN_STATUS_PUMP_EVAPORATOR );
+  upload_data.b_status_pump_evap = true;
 
   // send data to Wi-Fi module and upload to server
   _wifi.upload_data(HOSTNAME, _station_api_key, upload_data, 20000 );
 
+}
+
+// Upload log messages to server
+void cSmartFarm::upload_log(){
+  if( !_wifi.is_enabled() ||
+      !_station_api_key[0] ||
+      strcmp("xxxxxxxxxxxx", _station_api_key)==0 )
+    return;
+
+  {
+    char buf1[200+LOGBUFFER_MAX_NUM*(LOGBUFFER_MAX_LEN+1)]
+      , buf2[200+LOGBUFFER_MAX_NUM*(LOGBUFFER_MAX_LEN+1)];
+    uint16_t len = _log_buffer.get_all_logs(buf1, sizeof(buf1));
+    if( len==0 ){
+      Log.info("I:No log in buffer\r\n");
+      return;
+    }
+
+    Log.infoln("I:LOGBUFFER");
+    Log.infoln(buf1);
+
+    sprintf( buf2, "{\"api_key\":\"%s\",\"log\":\"%s\"}", _station_api_key, buf1 );
+    uint16_t body_len = strlen(buf2);
+
+    sprintf( buf1, "POST /api/add_log HTTP/1.1\r\n"
+      "Host: %s\r\n"
+      "content-type: application/json\r\n"
+      "content-length: %d\r\n"
+      "Connection: close\r\n\r\n%s", HOSTNAME, body_len, buf2);
+
+    _wifi.send_request(HOSTNAME, buf1);
+  }
+  Log.info("\r\n");
+  Log.infoln("I:Waiting response from server ...");
+  if( _wifi.wait_response("R:{\"result\":\"success\"", "R:{\"result\":\"fail\"", 20000) ){
+    _log_buffer.clear();
+    Log.infoln("I:Log uploaded");
+    return;
+  }
+  else{
+    lcd_err.print("LOGUPLOAD FAILED");
+    return;
+  }
 }
 
 // send LINE message

@@ -8,8 +8,8 @@
 
 #include "cAnalogSensor.h"
 
-#define PH_READ_INTERVAL_MS   1    // interval to read pH data [ms]
-#define PH_BUFFER_NUM         20   // number of pH data used to calculate average value
+#define PH_READ_INTERVAL_MS   1    // an interval to read pH data [ms]
+#define PH_BUFFER_NUM         20   // the number of pH data used to calculate average value
 
 class cPH : public cAnalogSensor{
 public:
@@ -23,10 +23,13 @@ public:
   // read pH
   float read(){
     if( !_b_enable )
-      return 0.0;
+      return -1.0;
 
-    float volt = get_average_volt()
-      , pH = _param_volt2pH[0] * volt + _param_volt2pH[1];
+    float volt = get_average_volt();
+    if( volt<=0.0 )
+      return -1.0;
+
+    float pH = _param_volt2pH[0] * volt + _param_volt2pH[1];
     return pH;
   }
 

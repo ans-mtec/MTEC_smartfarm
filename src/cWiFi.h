@@ -1,6 +1,7 @@
 #ifndef __CWIFI_H__
 #define __CWIFI_H__
 
+
 #include <time.h>
 /*
   A class for communicating with Wi-Fi module
@@ -65,18 +66,19 @@ public:
   // return true if Wi-Fi is connected.
   bool is_connected();
 
-  // get time from internet
-  bool get_time(struct tm *p_timeinfo);
+  // get date & time from the internet
+  bool get_datetime(struct tm *p_timeinfo);
 
-  // Change SSID, user name or password
+  // Change SSID, user name and password
+  // Set username to NULL if NOT Enterprise mode
   bool change_network_profile(const char *ssid, const char *username, const char *password);
-  
+
   // Reconnect Wi-Fi
   bool reconnect();
-  
+
   // Restart Wi-Fi module
   bool restart();
-  
+
 
   // enable / disable
   inline bool enable(bool b_enable){
@@ -109,22 +111,27 @@ public:
       Serial2.print(msg);
   }
 
+  // reset Wi-Fi module
+  void reset();
+
 private:
-  // get time from Wi-Fi module. return false if failed
-  bool get_time_from_wifi(struct tm *p_timeinfo);
+  // get date & time from Wi-Fi module. return false if failed
+  bool get_datetime_from_wifi(struct tm *p_timeinfo);
+
+  // get unix time from Wi-Fi module. return false if failed
   bool get_unixtime_from_wifi(time_t *p_unixtime);
 
-  char _serial_buf[WIFI_BUFFER_SIZE]; // buffer to store response from Wi-Fi module
+  char _serial_buf[WIFI_BUFFER_SIZE]; // a buffer to store response from Wi-Fi module
   uint16_t _n_serial_buf;             // The latest index of the buffer
   void (*_fn_update)(void);           // update function
 
-  struct tm _timeinfo;                // store time got from Wi-Fi module
+  struct tm _timeinfo;                // for storing date & time got from Wi-Fi module
   uint32_t _t_timeinfo                // timestamp when _timeinfo is updated
     , _t_last_timeinfo;               // the last time _timeinfo was updated
 
-  uint32_t _unixtime;                  // store time got from Wi-Fi module (sec)
-  uint32_t _t_unixtime                // timestamp when _timeinfo is updated
-    , _t_last_unixtime;               // the last time _timeinfo was updated
+  uint32_t _unixtime;                 // for storing unix time got from Wi-Fi module (sec)
+  uint32_t _t_unixtime                // timestamp when _unixtime is updated
+    , _t_last_unixtime;               // the last time _unixtime was updated
 
   bool _b_enable                      // True if Wi-Fi module is enabled
     , _b_init;                         // True if initilized

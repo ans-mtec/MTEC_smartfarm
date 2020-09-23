@@ -80,6 +80,7 @@ public:
 
   // check if enabled
   inline bool is_enabled(){ return _b_enable; }
+  inline bool is_active(){ return _b_enable && _b_init; }
 
 
 private:

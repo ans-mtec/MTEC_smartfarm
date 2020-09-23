@@ -45,7 +45,7 @@ protected:
   // return average voltage from sensor
   float get_average_volt();
 
-  bool _b_enable;             // the sensor is enabled
+  bool _b_enable;             // True if the sensor is enabled
   uint32_t _t_last_update     // The last time data updated
     , _read_interval_ms;      // interval to read analog data and save to buffer [ms]
   uint16_t *_buffer           // data buffer
