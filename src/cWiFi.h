@@ -73,6 +73,14 @@ public:
   // Set username to NULL if NOT Enterprise mode
   bool change_network_profile(const char *ssid, const char *username, const char *password);
 
+  // get MAC address from Wi-Fi module
+  bool get_mac_address(uint8_t mac[6]);
+
+  // set MAC address of the Wi-Fi module
+  // The new MAC address will not be saved.
+  // It means that you have to set the MAC address every time the Wi-Fi module is reset.
+  void set_mac_address(const uint8_t mac[6]);
+
   // Reconnect Wi-Fi
   bool reconnect();
 
@@ -120,6 +128,12 @@ private:
 
   // get unix time from Wi-Fi module. return false if failed
   bool get_unixtime_from_wifi(time_t *p_unixtime);
+
+  // convert string to MAC address
+  bool string_to_mac(const char *str, uint8_t mac[6]);
+  
+  // convert MAC address to string
+  void mac_to_string( const uint8_t mac[6], char str[18]);
 
   char _serial_buf[WIFI_BUFFER_SIZE]; // a buffer to store response from Wi-Fi module
   uint16_t _n_serial_buf;             // The latest index of the buffer

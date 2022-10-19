@@ -43,14 +43,11 @@ void setup(){
   // Turn off fans
   digitalWrite( PIN_OUTPUT_FAN_BOTTOM, false );  // lower
 
-  // Set a number of pixels in LED strip to 5
-  smartfarm._led.set_pixel_num( 5 );
-
   /*
-    Change all pixels' RGB color.
-    RGB varies between 0~255
+    Change all pixels' RGBW color.
+    RGBW varies between 0~255
   */
-  smartfarm._led.set_color( 50, 100, 250 ); // R(red) = 50, G(green) = 100, B(blue) = 250
+  smartfarm._led.set_color( 50, 100, 250, 255 ); // R(red) = 50, G(green) = 100, B(blue) = 250, W(white) = 255
 }
 
 void loop(){

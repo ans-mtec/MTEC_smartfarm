@@ -100,7 +100,6 @@ void cSmartFarm::update(){
 
   _wifi.update();
   _temp_humid.update();
-  _led.update();
   micro_update();
 
   // upload data to server every [INTERVAL_UPLOAD_DATA] milliseconds
@@ -220,9 +219,9 @@ void cSmartFarm::upload_data(){
   upload_data.input_pump_evap = digitalRead( PIN_INPUT_PUMP_EVAPORATOR );
   upload_data.b_input_pump_evap = true;
 
-  const uint8_t *rgb = _led.get_color();
-  for(int i=0;i<3;i++)
-    upload_data.input_light[i] = rgb[i]/255.0;
+  const uint8_t *rgbw = _led.get_color();
+  for(int i=0;i<4;i++)
+    upload_data.input_light[i] = rgbw[i]/255.0;
   upload_data.b_input_light = true;
 
   // have to inverse because of the opto isolator

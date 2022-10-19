@@ -207,6 +207,8 @@ bool cWiFi::upload_data(const char *host, const char *api_key, const tUploadData
     send_command(upload_data.input_light[1], true);
     send_command(",\"input_light_b\":", true);
     send_command(upload_data.input_light[2], true);
+    send_command(",\"input_light_w\":", true);
+    send_command(upload_data.input_light[3], true);
   }
   send_command("};\r\n", true);
   Log.infoln("I:Waiting response from server ...");
@@ -552,6 +554,120 @@ bool cWiFi::change_network_profile(const char *ssid, const char *username, const
 }
 
 
+
+bool cWiFi::string_to_mac(const char *str, uint8_t mac[6]){
+  if( strlen(str)!=6*2+5 ){
+    Log.errorln("FAIL:MAC:Invalid length");
+    return false;
+  }
+  const char *p = str;
+  for(int i=0;i<6;i++){
+    mac[i] = 0;
+    for(int j=0;j<2;j++){
+      if( p[j]>='0' && p[j]<='9' ){
+        mac[i]+= p[j]-'0';
+      }
+      else if( p[j]>='a' && p[j]<='f' ){
+        mac[i]+= p[j]-'a' + 10;
+      }
+      else if( p[j]>='A' && p[j]<='F' ){
+        mac[i]+= p[j]-'A' + 10;
+      }
+      else{
+        Log.error("FAIL:MAC:Invalid char:");
+        Log.errorln(p[j]);
+        return false;
+      }
+      if( j==0 )
+        mac[i]*= 16;
+    }
+    if( i<5 && p[2]!=':' ){
+      Log.errorln("FAIL:MAC:No colon");
+      return false;
+    }
+    p+=3;
+  }
+  return true;
+}
+
+
+
+void cWiFi::mac_to_string( const uint8_t mac[6], char str[18]){
+  char *p = str;
+  for(int i=0;i<6;i++){
+    const uint8_t n[2] = { uint8_t(mac[i] >> 4), uint8_t(mac[i] & 15) };
+    for(int j=0;j<2;j++){
+      if( n[j] < 10 )
+        p[j] = '0'+n[j];
+      else
+        p[j] = 'A' - 10 + n[j];
+    }
+    p[2] = ':';
+    p+=3;
+  }
+  p[-1] = 0;
+}
+
+
+// get MAC address of the Wi-Fi module
+bool cWiFi::get_mac_address(uint8_t mac[6]){
+  if( !_b_enable || !_b_init )
+    return false;
+  update();
+
+  send_command("\r\nMAC\r\n");
+  const uint32_t t = millis();
+  do{
+    if( _fn_update )
+      _fn_update();
+    if( Serial2.available() ){
+      char c = Serial2.read();
+      if( c=='\r' || c=='\n' ){
+        if( _n_serial_buf>0 ){
+          _serial_buf[_n_serial_buf] = 0;
+          Log.info("WiFi:");
+          Log.infoln(_serial_buf);
+          _n_serial_buf = 0;
+          if( strncmp( _serial_buf, "OK:MAC:", 7 )==0 ){
+            return string_to_mac( _serial_buf + 7, mac );
+          }
+        }
+      }
+      else{
+        if( _n_serial_buf>=WIFI_BUFFER_SIZE-1 ){
+          _serial_buf[WIFI_BUFFER_SIZE-1] = 0;
+          Log.warn("W:Too long serial msg:");
+          Log.warnln(_serial_buf);
+          _n_serial_buf = 0;
+        }
+        else{
+          _serial_buf[_n_serial_buf++] = c;
+        }
+      }
+    }
+  }
+  while( (uint32_t)(millis()-t) < 3000 );
+
+  Log.errorln("E:get_mac_address timeout");
+  return false;
+}
+
+
+
+// get MAC address of the Wi-Fi module
+void cWiFi::set_mac_address(const uint8_t mac[6]){
+  if( !_b_enable || !_b_init )
+    return;
+  update();
+
+  char str[18];
+  mac_to_string( mac, str );
+  send_command("\r\nMAC:");
+  send_command(str, true);
+  send_command("\r\n", true);
+}
+
+
 bool cWiFi::reconnect(){
   if( !_b_enable || !_b_init )
     return false;
@@ -637,7 +753,7 @@ void cWiFi::update(){
     else
       return;
   }
-  
+
 
   read_response();
 
