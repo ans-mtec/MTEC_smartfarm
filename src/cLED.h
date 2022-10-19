@@ -20,8 +20,12 @@ public:
   }
 
   void start(){
+    Serial.println("start led");
+    Serial.println(_b_enable);
+    Serial.println(_b_init);
     if( !_b_enable || _b_init )
       return;
+    _pwm.begin();
     _pwm.setOscillatorFrequency(27000000);
     _pwm.setPWMFreq(1600);
     Wire.setClock(10000);
@@ -39,14 +43,15 @@ public:
   // set color
   // r(red), g(green), b(blue), w(white) value can be 0 ~ 255
   void set_color(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t w){
-    if( !_b_enable || _b_init )
+    if( !_b_enable || !_b_init )
       return;
     _rgb_target[0] = r;
     _rgb_target[1] = g;
     _rgb_target[2] = b;
     _rgb_target[3] = w;
-    for(int i=0;i<4;i++)
+    for(int i=0;i<4;i++){
       _pwm.setPWM( i, 0, uint32_t(4095)*_rgb_target[i] / 255 );
+    }
   }
 
   inline const uint8_t *get_color(){ return _rgb_target; }
